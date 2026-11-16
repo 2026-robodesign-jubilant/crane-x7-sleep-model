@@ -21,5 +21,9 @@
 `src/crane_x7_description/` は非商用使用許諾規約のため同梱せず、`crane_x7.repos` で取得する（Git 管理対象外）。
 依存コードを変更するときは `src/arm_control/THIRD_PARTY.md` も確認する。
 
-`build/`、`install/`、`log/`、`__pycache__/`、`src/crane_x7_description/`、生成された検証結果や認証情報をコミットしない。
-個人的なやり取りの記録や学習の進み具合は、このリポジトリ（公開）に書かない。
+`private_notes/` があれば、上の資料と一緒に `private_notes/README.md` も読む。
+ユーザーの個人的なやり取り・学習の進み具合・進め方の希望の記録で、`.gitignore` により Git 管理外。
+内容を公開されるファイル（コミットする資料・コミットメッセージ・PR）へ写さず、追記するときもこのフォルダに書く。
+
+`build/`、`install/`、`log/`、`__pycache__/`、`src/crane_x7_description/`、`private_notes/`、
+生成された検証結果や認証情報をコミットしない。

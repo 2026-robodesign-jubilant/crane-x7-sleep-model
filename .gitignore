@@ -12,3 +12,6 @@ src/crane_x7_description/
 
 # 生成される検証結果
 src/arm_control/simulation/results/
+
+# ユーザーの個人メモ（公開しない。エージェントは AGENTS.md の案内で読む）
+private_notes/
