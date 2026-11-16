@@ -148,6 +148,8 @@ ros2 launch ./src/arm_control/hardware_observation.launch.py
 
 `/expression_active` も専用の名前へ変更しているため、通常の表現フラグの影響は受けません。
 既存の `/activity`・`/drowsiness` へは配信しません。
+眠気ノードの `/wake`（入力）と `/sleep_state`（出力）も、`/hardware_observation/wake`・
+`/hardware_observation/sleep_state` へ分けています。
 
 ## 3. 接続と値を確認する（端末2）
 

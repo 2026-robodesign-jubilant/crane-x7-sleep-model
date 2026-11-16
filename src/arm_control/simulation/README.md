@@ -32,16 +32,18 @@ Gazebo・RViz・活動度ノード・眠気ノード・2本のグラフを一括
 
 `manual_activity.launch.py` は `sleep_expression.py` を自動起動します。
 起動後に関節情報・Gazebo・MoveIt・コントローラが揃ったら、まず肩20°・肘−120°・
-手首−80°の待機姿勢へMoveItで一度移動します。先端は下向きのまま、眠気が
-しきい値未満の間は静止して待機します。睡眠姿勢との差は肩と手首の各10°です。
+手首−80°の待機姿勢へMoveItで一度移動します。先端は下向きのまま、`/sleep_state` が
+`awake` の間は静止して待機します。睡眠姿勢との差は肩と手首の各10°です。
 初期モデルの生成姿勢を変えるのではなく、準備完了後に待機位置へ移動する方式です。
-眠気が **0.6以上** になると、MoveItで経路を計画してゆっくり頭を下げます。
+表現ノードは眠気ノードが配信する `/sleep_state` で動きます（2026-11-16から）。
+`drowsy`（眠気が **0.6以上** になったとき）で、MoveItで経路を計画してゆっくり頭を下げます。
 睡眠姿勢の中心角度は肩10°・肘−120°・手首−70°で、ねじり軸は0°です。
 肩・肘・手首のピッチ合計が−180°になるため、先端の+Z軸が真下を向きます。
 土台の旋回角と先端のロール角は開始時の値を保持します。
 
-睡眠姿勢に到達したら、肩を **±3°・6秒周期** で動かし、手首は逆向きに動かします。
-先端を真下に向けたまま、約2 cmの範囲でゆっくり上下に揺れる動きです。
+睡眠姿勢に到達したら、`drowsy` の間は肩を **±3°・6秒周期** で動かし、手首は逆向きに動かします。
+先端を真下に向けたまま、約2 cmの範囲でゆっくり上下に揺れる動きです（うとうと）。
+`asleep`（眠気0.85以上）になったら、今の1往復を終えて、揺れの中心（睡眠姿勢）で静止します。
 
 ```python
 delta = amplitude * math.sin(2 * math.pi * t / period)
@@ -49,8 +51,10 @@ shoulder = shoulder_center + delta
 wrist = wrist_center - delta
 ```
 
-眠気がしきい値未満になったら、現在の1往復を終え、MoveItで開始前の姿勢へ戻ります。
-現在は外部刺激が未接続なので、眠気は自然には下がりません。
+`awake`（`/wake` の手振り刺激で眠気が0.4未満）になったら、現在の1往復を終え、MoveItで開始前の姿勢へ戻ります。
+眠気は自然には下がりません。手振り検出は未実装なので、別端末から
+`ros2 topic pub -r 2 /wake std_msgs/msg/Empty "{}"` で手振りの代わりを送ります（`ROS_DOMAIN_ID=87`）。
+しきい値は `drowsiness_node.py` のパラメータ（`drowsy_threshold`・`sleep_threshold`・`wake_threshold`）です。
 移動・揺れ・停止後0.3秒は `/expression_active=true` を配信します。
 活動度は固定せず、表現ノードが `/expression_joint_velocity` で伝える指令角速度を実測から差し引きます。
 そのため自動動作だけを見ている間、活動度のグラフは0のままで正常です。
@@ -59,10 +63,11 @@ RVizで活動度を確認するときは「Plan & Execute」を使います。�
 入力が1秒途切れた場合は実行中の軌道をキャンセルします。
 可動域と速度上限を検査し、揺れの各サンプルをMoveItの現在の計画シーンで衝突確認します。
 Gazebo専用です。MoveItサービスがない場合は動作せず待機します。
-手動操作が割り込んだら停止し、眠気が一度しきい値を下回るまで再開しません。
+手動操作が割り込んだら停止し、`/sleep_state` が一度 `awake` に戻るまで再開しません。
+`/sleep_state` が1秒途切れた場合も、他の入力と同じく動作しません。
 
 ```bash
-ros2 launch ./src/arm_control/simulation/manual_activity.launch.py nod_threshold:=0.6 nod_amplitude_deg:=3.0 nod_period:=6.0
+ros2 launch ./src/arm_control/simulation/manual_activity.launch.py nod_amplitude_deg:=3.0 nod_period:=6.0
 ```
 
 手動操作や活動度・眠気だけを検証する場合は `nod:=false` を指定します（起動時の待機位置への移動も無効）。

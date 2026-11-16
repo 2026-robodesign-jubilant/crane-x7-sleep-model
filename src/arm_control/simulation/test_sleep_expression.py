@@ -8,6 +8,8 @@ import unittest
 from unittest.mock import Mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from std_msgs.msg import Float32, String
+
 from sleep_expression import SleepExpression, sleep_cycle, sleep_pose, waiting_pose
 
 
@@ -54,9 +56,19 @@ class StartupTest(unittest.TestCase):
             model_verified=True, goal_handle=None, pending=False, next_start=0., blocked=False,
             bounds=[(-math.pi, math.pi, 1.)] * 7, arm=Mock(), planner=Mock(),
             validity=Mock(), expression=Mock(), get_logger=Mock(), plan_pose=Mock(),
-            startup_attempted=False, sleepiness=0., threshold=.6, sleeping=False,
+            startup_attempted=False, sleepiness=0., sleep_state='awake', sleeping=False,
             positions=[0.] * 7, amplitude=math.radians(3), period=6.,
+            make_sleep_cycle=Mock(return_value=['points']), check_cycle=Mock(),
         )
+        return node
+
+    def sleeping_node(self, state):
+        node = self.make_node()
+        node.startup_attempted = True
+        node.sleeping = True
+        node.awake_pose = waiting_pose(node.positions)
+        node.sleep_center = sleep_pose(node.awake_pose)
+        node.sleep_state = state
         return node
 
     def test_startup_moves_even_below_threshold_then_waits(self):
@@ -81,14 +93,80 @@ class StartupTest(unittest.TestCase):
             node.plan_pose.assert_not_called()
             self.assertFalse(node.startup_attempted)
 
-    def test_threshold_still_starts_sleep_from_waiting_pose(self):
+    def test_drowsy_starts_sleep_from_waiting_pose(self):
+        for state in ('drowsy', 'asleep'):  # 起動直後に asleep でも、まず睡眠姿勢へ下りる
+            with self.subTest(state=state):
+                node = self.make_node()
+                node.startup_attempted = True
+                node.positions = waiting_pose(node.positions)
+                node.sleep_state = state
+                SleepExpression.update(node)
+                node.plan_pose.assert_called_once_with(sleep_pose(node.positions), 'lowering')
+                self.assertEqual(node.awake_pose, node.positions)
+
+    def test_awake_waits_and_high_drowsiness_alone_does_not_start(self):
         node = self.make_node()
         node.startup_attempted = True
-        node.positions = waiting_pose(node.positions)
-        node.sleepiness = .6
+        node.sleepiness = .9  # 判定は /sleep_state だけで行う
         SleepExpression.update(node)
-        node.plan_pose.assert_called_once_with(sleep_pose(node.positions), 'lowering')
-        self.assertEqual(node.awake_pose, node.positions)
+        node.plan_pose.assert_not_called()
+
+    def test_drowsy_sways_while_sleeping(self):
+        node = self.sleeping_node('drowsy')
+        SleepExpression.update(node)
+        node.check_cycle.assert_called_once_with(['points'], 0)
+        self.assertTrue(node.pending)
+
+    def test_asleep_holds_still_at_sleep_pose(self):
+        node = self.sleeping_node('asleep')
+        SleepExpression.update(node)
+        node.check_cycle.assert_not_called()
+        node.plan_pose.assert_not_called()
+        self.assertFalse(node.active)
+
+    def test_awake_returns_to_pose_before_sleep(self):
+        node = self.sleeping_node('awake')
+        SleepExpression.update(node)
+        node.plan_pose.assert_called_once_with(node.awake_pose, 'waking')
+
+    def test_cycle_is_not_sent_after_leaving_drowsy(self):
+        node = self.sleeping_node('asleep')
+        node.send_trajectory = Mock()
+        SleepExpression.check_cycle(node, ['points'], 1)
+        node.send_trajectory.assert_not_called()
+        self.assertFalse(node.pending)
+
+
+class SleepStateInputTest(unittest.TestCase):
+    def make_node(self):
+        return SimpleNamespace(
+            now=lambda: 10., sleep_state=None, state_stamp=None, blocked=True,
+            sleepiness=0., sleep_stamp=None, joint_stamp=10., get_logger=Mock(),
+        )
+
+    def test_only_awake_clears_failure_block(self):
+        node = self.make_node()
+        for state in ('drowsy', 'asleep'):
+            SleepExpression.on_sleep_state(node, String(data=state))
+            self.assertTrue(node.blocked)
+        SleepExpression.on_drowsiness(node, Float32(data=0.1))  # 眠気が低いだけでは解除しない
+        self.assertTrue(node.blocked)
+        SleepExpression.on_sleep_state(node, String(data='awake'))
+        self.assertFalse(node.blocked)
+
+    def test_unknown_state_is_ignored(self):
+        node = self.make_node()
+        SleepExpression.on_sleep_state(node, String(data='sleepy'))
+        self.assertIsNone(node.sleep_state)
+        self.assertIsNone(node.state_stamp)
+
+    def test_state_must_be_fresh(self):
+        node = self.make_node()
+        SleepExpression.on_drowsiness(node, Float32(data=0.5))
+        self.assertFalse(SleepExpression.inputs_fresh(node, 10.))  # /sleep_state 未受信
+        SleepExpression.on_sleep_state(node, String(data='drowsy'))
+        self.assertTrue(SleepExpression.inputs_fresh(node, 10.5))
+        self.assertFalse(SleepExpression.inputs_fresh(node, 11.))
 
 
 if __name__ == '__main__':

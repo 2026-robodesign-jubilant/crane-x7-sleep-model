@@ -25,7 +25,7 @@ class HardwareGuardTest(unittest.TestCase):
     def node(self):
         return SimpleNamespace(
             enabled=False, model_verified=True, floor_ready=True, now=lambda: 10., sleep_stamp=10.,
-            joint_stamp=10., pending=False, goal_handle=None, cancel_requested=False,
+            joint_stamp=10., state_stamp=10., pending=False, goal_handle=None, cancel_requested=False,
             arm=Mock(), planner=Mock(), validity=Mock(), blocked=False,
             get_parameter=lambda name: SimpleNamespace(value=True),
             positions=[0.] * 7, bounds=[(-2., 2., 1.)] * 7,
@@ -39,10 +39,12 @@ class HardwareGuardTest(unittest.TestCase):
         self.assertFalse(node.enabled)
 
     def test_enable_requires_hardware_fresh_inputs_and_servers(self):
-        for unavailable in ('model_verified', 'floor_ready', 'fresh', 'server', 'pending'):
+        for unavailable in ('model_verified', 'floor_ready', 'fresh', 'state', 'server', 'pending'):
             node = self.node()
             if unavailable == 'fresh':
                 node.joint_stamp = 8.
+            elif unavailable == 'state':
+                node.state_stamp = None  # /sleep_state 未受信
             elif unavailable == 'server':
                 node.planner.service_is_ready.return_value = False
             elif unavailable == 'pending':

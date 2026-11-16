@@ -13,7 +13,7 @@ from shape_msgs.msg import SolidPrimitive
 from std_msgs.msg import Bool
 from std_srvs.srv import SetBool
 
-from drowsiness_expression import DrowsinessExpression, JOINTS
+from drowsiness_expression import JOINTS
 from sleep_expression import SleepExpression, sleep_cycle
 
 
@@ -162,8 +162,8 @@ class HardwareSleepExpression(SleepExpression):
             response.message = '実機用のrobot_descriptionを確認できていません'
         elif not self.floor_ready:
             response.message = '設置面の衝突モデルをMoveItへ登録できていません'
-        elif not DrowsinessExpression.inputs_fresh(self, self.now()):
-            response.message = '関節情報または眠気の入力が未受信・古い状態です'
+        elif not SleepExpression.inputs_fresh(self, self.now()):
+            response.message = '関節情報・眠気・/sleep_state の入力が未受信・古い状態です'
         elif issues := start_state_issues(self.positions, self.bounds):
             response.message = '開始姿勢が可動域外です。動作は送りません: ' + '; '.join(issues)
         elif self.pending or self.goal_handle is not None:
@@ -179,7 +179,7 @@ class HardwareSleepExpression(SleepExpression):
         return response
 
     def fail(self, error):
-        # The shared simulation callback clears blocked when drowsiness is low.
+        # The shared simulation callback clears blocked when /sleep_state is awake.
         # Hardware failures must still require another explicit enable request.
         self.enabled = False
         super().fail(error)

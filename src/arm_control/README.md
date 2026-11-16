@@ -32,18 +32,21 @@ ros2 launch ./src/arm_control/simulation/manual_activity.launch.py
 Gazebo、RViz、活動度・眠気ノード、グラフ、睡眠表現が起動します。
 起動後、関節情報とMoveItの準備ができたら、睡眠姿勢に近い待機姿勢
 （肩20°・肘−120°・手首−80°、先端は下向き）へ一度移動して待機します。
-静止状態から約30秒で眠気が0.6に達し、MoveItで頭を下げます。
+静止状態から約30秒で眠気が0.6に達して `drowsy` になり、MoveItで頭を下げます。
 到達後は肩を±3°・6秒周期で揺らし、手首を逆向きに動かして先端を下向きに保ちます。
+約63秒で0.85に達して `asleep` になると、1往復を終えて静止します。
+別端末から `ros2 topic pub -r 2 /wake std_msgs/msg/Empty "{}"` を数秒送ると、眠気が0.4未満で `awake` に戻り、元の姿勢へ戻ります。
 `nod:=false` で表現を無効化できます。終了は起動端末で Ctrl+C を押します。
 実機用ドライバは起動しません。現在の表現ノードはGazebo専用です。
 
 ```text
-/joint_states → activity_monitor.py → /activity → drowsiness_node.py → /drowsiness
-                       ↑                                                  ↓
+/joint_states → activity_monitor.py → /activity → drowsiness_node.py → /drowsiness, /sleep_state
+                       ↑                              /wake ──┘                       ↓
   /expression_active, /expression_joint_velocity ← sleep_expression.py → MoveIt / 関節軌道
 ```
 
-眠気は活動度が高いと増加が遅くなります。外部刺激による覚醒、手振り認識、書類追従は未実装です。
+眠気は活動度が高いと増加が遅くなり、`/wake`（手振り1回分）の刺激で下がります。
+`/wake` を出す手振り認識、LED、書類追従は未実装です。
 `drowsiness_expression.py` は以前の肩のみを動かす表現で、通常起動では `sleep_expression.py` を使います。
 
 別端末で確認する場合は ROS 環境を読み込み、`export ROS_DOMAIN_ID=87` を設定してください。

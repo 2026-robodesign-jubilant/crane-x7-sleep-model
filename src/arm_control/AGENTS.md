@@ -20,7 +20,8 @@
 
 - 通常起動の睡眠表現は `sleep_expression.py`。`drowsiness_expression.py` は旧表現と共通処理。
 - `/joint_states` → 活動度 → 眠気 → 表現動作。表現の指令角速度（`/expression_joint_velocity`）を活動度から差し引く。
-- 活動度は眠気の増加を遅くする。現在は外部刺激による覚醒・手振り認識・書類追従は未実装。
+- 活動度は眠気の増加を遅くする。眠気ノードは `/wake` を外部刺激として眠気を下げ、`/sleep_state`
+  （awake/drowsy/asleep）を配信する（2026-11-16）。表現ノードは `/sleep_state` で動く（drowsyで揺れ、asleepで静止）。`/wake` を出す手振り認識、LED、書類追従は未実装。
 - このフォルダ自体はまだ ament パッケージではない。Python スクリプトをlaunchから起動している。
 - 通常の表現ノードはGazebo用の確認を行う。実機用は別の入口
   `hardware_sleep_expression.py` と `hardware_activity.launch.py` を使う。

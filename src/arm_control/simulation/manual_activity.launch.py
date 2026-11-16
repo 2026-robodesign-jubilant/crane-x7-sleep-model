@@ -41,7 +41,6 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('plot', default_value='true'),
         DeclareLaunchArgument('nod', default_value='true'),
-        DeclareLaunchArgument('nod_threshold', default_value='0.6'),
         DeclareLaunchArgument('nod_amplitude_deg', default_value='3.0'),
         DeclareLaunchArgument('nod_period', default_value='6.0'),
         # An already-running Gazebo server can otherwise receive the spawn
@@ -67,7 +66,6 @@ def generate_launch_description():
         ExecuteProcess(cmd=[
             '/usr/bin/python3', str(monitor.with_name('sleep_expression.py')),
             '--ros-args', '-p', 'use_sim_time:=true',
-            '-p', ['threshold:=', LaunchConfiguration('nod_threshold')],
             '-p', ['amplitude_deg:=', LaunchConfiguration('nod_amplitude_deg')],
             '-p', ['period:=', LaunchConfiguration('nod_period')],
         ], condition=IfCondition(LaunchConfiguration('nod')), output='screen'),

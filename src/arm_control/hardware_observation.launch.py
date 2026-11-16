@@ -15,6 +15,8 @@ def generate_launch_description():
         '-r', ['/joint_states:=', LaunchConfiguration('joint_states_topic')],
         '-r', '/activity:=/hardware_observation/activity',
         '-r', '/drowsiness:=/hardware_observation/drowsiness',
+        '-r', '/wake:=/hardware_observation/wake',
+        '-r', '/sleep_state:=/hardware_observation/sleep_state',
         '-r', '/expression_active:=/hardware_observation/expression_active',
         '-r', '/expression_joint_velocity:=/hardware_observation/expression_joint_velocity',
     ]

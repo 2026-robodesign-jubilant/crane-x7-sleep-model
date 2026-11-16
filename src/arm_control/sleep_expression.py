@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""先端を真下に向け、肩と手首を連動させて小さく揺らす睡眠表現。"""
+"""/sleep_state に応じた睡眠表現。
+
+awake: 起きている姿勢へ戻る。drowsy: 先端を真下に向けた姿勢で、肩と手首を連動させて小さく揺らす。
+asleep: 揺れの1往復を終えたら、その中心（睡眠姿勢）で静止する。
+"""
 
 import math
 import xml.etree.ElementTree as ET
@@ -11,9 +15,11 @@ from moveit_msgs.srv import GetMotionPlan, GetStateValidity
 import rclpy
 from rclpy.signals import SignalHandlerOptions
 from sensor_msgs.msg import JointState
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, String
 
 from drowsiness_expression import DrowsinessExpression, JOINTS, make_cycle
+
+SLEEP_STATES = ('awake', 'drowsy', 'asleep')
 
 
 def sleep_pose(origin):
@@ -59,9 +65,36 @@ class SleepExpression(DrowsinessExpression):
         self.sleeping = False
         self.motion_kind = None
         self.startup_attempted = False
+        # 状態の判定は眠気ノードが行う。このノードは /sleep_state を受け取って動くだけ。
+        self.sleep_state = None
+        self.state_stamp = None
+        self.create_subscription(String, '/sleep_state', self.on_sleep_state, 10)
         self.planner = self.create_client(GetMotionPlan, '/plan_kinematic_path')
         self.validity = self.create_client(GetStateValidity, '/check_state_validity')
-        self.get_logger().info('睡眠表現: 先端を真下に向け、肩と手首で小さく上下に揺らします')
+        self.get_logger().info('睡眠表現: drowsyで先端を真下に向けて揺れ、asleepで静止、awakeで戻ります')
+
+    def on_drowsiness(self, msg):
+        # 眠気の値は鮮度の確認に使う。失敗後の再開は on_sleep_state の awake で判断する。
+        if math.isfinite(msg.data):
+            self.sleepiness = min(1.0, max(0.0, msg.data))
+            self.sleep_stamp = self.now()
+
+    def on_sleep_state(self, msg):
+        if msg.data not in SLEEP_STATES:
+            self.get_logger().warning(f'未知の状態を無視します: {msg.data!r}',
+                                      throttle_duration_sec=5.0)
+            return
+        if msg.data != self.sleep_state:
+            self.get_logger().info(f'状態: {self.sleep_state} -> {msg.data}')
+        self.sleep_state = msg.data
+        self.state_stamp = self.now()
+        if msg.data == 'awake':
+            # 失敗で止まった表現は、一度起きてから再開する。
+            self.blocked = False
+
+    def inputs_fresh(self, now):
+        return (DrowsinessExpression.inputs_fresh(self, now) and self.state_stamp is not None
+                and 0 <= now - self.state_stamp < 1.0)
 
     def on_description(self, msg):
         super().on_description(msg)
@@ -111,9 +144,12 @@ class SleepExpression(DrowsinessExpression):
             self.startup_attempted = True
             self.plan_pose(waiting_pose(self.positions), 'waiting')
             return
-        if self.sleepiness < self.threshold:
+        if self.sleep_state not in ('drowsy', 'asleep'):
             if self.sleeping:
                 self.plan_pose(self.awake_pose, 'waking')
+            return
+        if self.sleeping and self.sleep_state == 'asleep':
+            # 揺れの1往復は中心で終わるので、ここに来たときは睡眠姿勢で静止している。
             return
         if not self.sleeping:
             self.awake_pose = list(self.positions)
@@ -179,7 +215,7 @@ class SleepExpression(DrowsinessExpression):
 
     def check_cycle(self, points, index):
         if (not self.inputs_fresh(self.now()) or not self.model_verified
-                or self.sleepiness < self.threshold):
+                or self.sleep_state != 'drowsy'):
             self.pending = False
             self.next_start = self.now() + .3
             return
