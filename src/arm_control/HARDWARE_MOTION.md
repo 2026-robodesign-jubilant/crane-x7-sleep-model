@@ -30,7 +30,7 @@ RealSenseについてユーザーから、公式の`CRANE-X7_with_RealSenseD435.
 既存の読み取りlaunchも終了してから実行してください（USBを二重に開かないため）。
 
 ```bash
-cd /home/kaito/4s_robodesign_jubilant
+cd ~/crane-x7-sleep-model
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 export ROS_DOMAIN_ID=88
@@ -73,7 +73,7 @@ TFとrobot_descriptionも`/hardware_observation/`配下へ分けています。
 ## 依存関係と起動構成の確認（実機を起動しない）
 
 ```bash
-cd /home/kaito/4s_robodesign_jubilant
+cd ~/crane-x7-sleep-model
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 ros2 launch ./src/arm_control/hardware_activity.launch.py --show-args

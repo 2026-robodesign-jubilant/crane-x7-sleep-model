@@ -13,7 +13,7 @@ Gazebo の関節状態から `activity_monitor.py` で活動度を生成し、
 その起動端末で Ctrl+C を押してから、以下を1つの端末で実行します。
 
 ```bash
-cd /home/kaito/4s_robodesign_jubilant
+cd ~/crane-x7-sleep-model
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 ros2 launch ./src/arm_control/simulation/manual_activity.launch.py
@@ -181,7 +181,7 @@ GUIまたはheadlessのシミュレーション起動後、同じROS環境で
 端末1:
 
 ```bash
-cd /home/kaito/4s_robodesign_jubilant
+cd ~/crane-x7-sleep-model
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 export ROS_DOMAIN_ID=87
@@ -193,7 +193,7 @@ ros2 launch ./src/arm_control/simulation/activity_check.launch.py
 端末2（自動確認。肩のパン関節を +0.3 rad、元の位置へと往復させます）:
 
 ```bash
-cd /home/kaito/4s_robodesign_jubilant
+cd ~/crane-x7-sleep-model
 source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 export ROS_DOMAIN_ID=87

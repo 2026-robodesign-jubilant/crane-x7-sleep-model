@@ -1,0 +1,14 @@
+# colcon
+build/
+install/
+log/
+
+# Python
+__pycache__/
+*.pyc
+
+# 取得して使う依存コード（同梱しない。crane_x7.repos を参照）
+src/crane_x7_description/
+
+# 生成される検証結果
+src/arm_control/simulation/results/

@@ -11,20 +11,15 @@
   眠気ノードは受信間隔を制限しない。手振り検出側が、認識中0.5秒ごとに1回出す。型は仮に `std_msgs/msg/Empty`。
 - 0.17は、深く眠った状態から約2秒（4回）で起きるよう手元の計算で選んだ値。ノード・シミュレーションでは未確認。
   20 Hzのオイラー法だと1回約4%多く効くので、1周期分の面積を厳密に計算する実装にする。
-- 刺激Eと面積（`k_down × τ`）の仕組みは、かいとさんが「よくわかんないけど進めよう」と回答し、理解は未確認。
-  実装時に、`ros2 topic pub` で眠気が下がる様子を見ながら説明を補う。
 - 状態の判定は `drowsiness_node.py` に置き、`/sleep_state`（`std_msgs/msg/String`、`awake`/`drowsy`/`asleep`）で配る。
   表現・LED・書類追従は受け取るだけ。配信は `/drowsiness` と同じ20 Hzの想定。
 - 同日に実装：`drowsiness_node.py` に `/wake` 購読（`on_wake` で E+1）、`decay_stimulus()`（面積を厳密に計算）、
   `next_sleep_state()`（ヒステリシス付き判定）、`/sleep_state` 配信、パラメータ `wake_tau`・3つのしきい値を追加。
   `k_down` の既定値を0.1→0.34。観測launchへ `/wake`・`/sleep_state` のremapを追加。
-  `on_wake` は練習としてかいとさんに任せたが「わかんない」とのことで、37行目の分解説明のあとエージェントが書いた。
 - テスト：`test_drowsiness.py` 10件（新規4件：dtに依らない1回0.17、ヒステリシス、静止で30.5秒/63.2秒、
   深さごとの必要回数）と既存の全テストが成功。ノード単体で `k_up:=0.3` にし、`ros2 topic pub -r 2 /wake` で
   asleep→awake（S 0.98→0.39）をログで確認。Gazebo・表現ノード・グラフとの組み合わせは未確認。
-- かいとさんが手元で、眠気ノード＋`ros2 topic echo /sleep_state`＋`ros2 topic pub -r 2 /wake` を実行し「動いた」と報告
-  （出力の内容は未共有。アプリのターミナル外で実行したため、エージェントは出力を見ていない）。
-  学習課題のうち `topic echo` / `topic pub` はこれで体験済み。`ros2 topic info -v /joint_states` は未確認。
+- 眠気ノード＋`ros2 topic echo /sleep_state`＋`ros2 topic pub -r 2 /wake` の手動確認を、ユーザーの手元でも実施。
 - 同日に表現を改造：`sleep_expression.py` が `/sleep_state` を購読。かいとさんの選択で、drowsy＝今の揺れのまま、
   asleep＝1往復を終えて睡眠姿勢の中心で静止、awake＝1往復を終えて元の姿勢へ。失敗後の再開は awake 受信時。
   `/sleep_state` も1秒の鮮度確認に加えた。表現ノードのしきい値は不要になり、manual launchの `nod_threshold` を削除。
@@ -52,7 +47,7 @@
   QoS変更や`/joint_states`の取得は原因ではなかった（実測で確認）。
 - 修正（ユーザーが方式を選択）：一律の凍結をやめ、表現の指令角速度だけを実測から差し引く。
   `drowsiness_expression.py`が軌道feedbackを`/expression_joint_velocity`へ配信し、
-  `activity_monitor.py`が関節ごとに引く。2026-11-06に控えの`/home/kaito/ros2_ws`にだけ
+  `activity_monitor.py`が関節ごとに引く。2026-11-06に移行元の旧ワークスペースにだけ
   入っていた方式を、このリポジトリ向けに書き直した。
 - 既定起動で自動動作だけを見ている間、活動度のグラフは0のままで正常。
   確認には「Plan & Execute」かグリッパー操作を使う。「Plan」だけではアームは動かない。
@@ -144,13 +139,12 @@
   準備時に既存17テスト・launch引数とremapの構成検査が成功。
   DDSソケット作成が実行環境で拒否され、模擬入力での通信は未確認。
 
-- 作業先：`/home/kaito/4s_robodesign_jubilant`。自作コード・本資料は `src/arm_control/`。
+- 作業先：このリポジトリのルート（2026-11-16 にチームリポジトリから移行）。自作コード・本資料は `src/arm_control/`。
 - エージェントはルートの `AGENTS.md` と `src/arm_control/AGENTS.md` を入口に、`AGENT.md`、本資料、`README.md` を読む。
 - 通常の睡眠表現は `sleep_expression.py`（肩・手首を連動、±3°・6秒周期）。以下の旧仕様・次タスクには過去の検討が含まれる。現行コードと最新の `AGENT.md` を優先する。
 - 手振り判定の切り返し方式・FFT方式、ヒステリシスなどは検討中で、以下の設計メモを実装済み・確定仕様とみなさない。
 - 2026-10-26の移行でテスト17件、7パッケージのビルド、launch引数の読み込みを確認済み。移行コミットは `010e9e7`。今回の資料移行でGUIや実機を再検証したわけではない。
 - `test_*.py` は画面を起動しない数値・軌道データのテスト。GUIを見る場合は、チームのルートで `source /opt/ros/jazzy/setup.bash`、`source install/setup.bash` の後に `ros2 launch ./src/arm_control/simulation/manual_activity.launch.py` を実行する。
-- `/joint_states` のpublisher/subscriber確認や `topic echo` / `topic pub` の学習課題は、ユーザーの完了確認がない。
 - 古い記録に出る `simulation/results/` の生成結果はGit管理対象外。移行先に実測ファイルがあると決めつけず、必要なら存在を確認する。
 
 以下のファイル名・資料パスは、特記のない限り `src/arm_control/` を基準とする。コマンド内の `src/arm_control/` はリポジトリルートを基準とする。

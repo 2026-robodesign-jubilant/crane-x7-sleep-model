@@ -1,24 +1,26 @@
 # CRANE-X7 の活動度・眠気・睡眠表現
 
 関節の活動度から眠気を更新し、CRANE-X7 が下を向いてゆっくり揺れる ROS 2 シミュレーションです。
-`ros2_ws` で開発していたコード・起動設定・検証スクリプトを移行しました。
+旧ワークスペースからチームリポジトリを経て、このリポジトリへ移しました（2026-11-16）。
 自作ノードは Python スクリプトとして起動します。このフォルダ自体はまだ ament パッケージではありません。
 
 ## セットアップ
 
 Ubuntu 24.04 / ROS 2 Jazzy と Gazebo、MoveIt 2 を使用します。
-以下はチームのリポジトリのルートで実行してください。
+以下はこのリポジトリのルートで実行してください。
+`crane_x7_description` は同梱していないので、最初に公式から取得します（`git clone` を使う場合はルートの README を参照）。
 
 ```bash
 source /opt/ros/jazzy/setup.bash
+vcs import src < crane_x7.repos
 rosdep install --from-paths src/crane_x7_ros src/crane_x7_description --ignore-src -r -y
 sudo apt install ros-jazzy-rqt-plot ros-jazzy-gz-ros2-control
 colcon build --symlink-install
 source install/setup.bash
 ```
 
-CRANE-X7 の依存パッケージは `src/crane_x7_ros/` と `src/crane_x7_description/` に同梱しています。
-追加のサブモジュール取得は不要です。取得元・固定コミット・ローカル修正は
+CRANE-X7 の依存パッケージのうち `src/crane_x7_ros/` は同梱、`src/crane_x7_description/` は
+ライセンスの都合で `crane_x7.repos` から取得します。取得元・固定コミット・ローカル修正は
 [THIRD_PARTY.md](THIRD_PARTY.md) を参照してください。
 
 ## 起動
@@ -95,12 +97,12 @@ python3 src/arm_control/simulation/test_sleep_expression.py
 ## 引き継ぎ資料
 
 - [HANDOFF_drowsiness.md](HANDOFF_drowsiness.md): 実装・検証の引き継ぎ
-- [AGENT.md](AGENT.md): 設計方針・学習の進め方の記録（一部は以前の表現の説明）
+- [AGENT.md](AGENT.md): 設計方針・合意事項・進め方の記録（一部は以前の表現の説明）
 - [README_ros2_ws.md](README_ros2_ws.md): 移行前のREADMEの記録
 
 ## エージェントと作業を続ける
 
-Codexでチームのリポジトリを作業フォルダとして開いてください。
+Codex や Claude Code で、このリポジトリのルートを作業フォルダとして開いてください。
 ルートの `AGENTS.md` が、アーム作業の指示・設計・引き継ぎ資料への入口です。
 `src/arm_control/` から開始する場合も、そのフォルダの `AGENTS.md` に同じ案内があります。
 保存した設計・進め方は資料で引き継ぎます。チャット全文や、このチャットの作業フォルダの設定はファイルコピーでは移りません。

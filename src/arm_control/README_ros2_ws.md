@@ -126,7 +126,7 @@ python3 src/arm_control/simulation/verify_drowsiness_expression.py --ros-args -p
 └── HANDOFF_drowsiness.md        # 引き継ぎ資料
 ```
 
-`build/`、`install/`、`log/`、Python キャッシュ、生成された検証結果は Git 管理対象外です。既存の資料には作業環境固有の `/home/kaito/4s_robodesign_jubilant` が記載されています。別の場所へ clone した場合はリポジトリのルートに読み替えてください。
+`build/`、`install/`、`log/`、Python キャッシュ、生成された検証結果は Git 管理対象外です。手順中の `~/crane-x7-sleep-model` は clone 先の例です。別の場所へ clone した場合はリポジトリのルートに読み替えてください。
 
 ## 依存パッケージのライセンス
 

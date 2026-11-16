@@ -1,0 +1,7 @@
+# crane_x7_description は RT Corporation の非商用使用許諾規約のため同梱しない。
+# 使用前に下記の固定コミットを公式から取得する: vcs import src < crane_x7.repos
+repositories:
+  crane_x7_description:
+    type: git
+    url: https://github.com/rt-net/crane_x7_description.git
+    version: 61865950f741f0d5a35e28eb0a7d2501cac86e7b

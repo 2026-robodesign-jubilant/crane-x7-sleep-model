@@ -18,7 +18,7 @@ sudo apt install ros-jazzy-dynamixel-sdk
 ### 実機なしで起動を試す
 
 ```bash
-cd /home/kaito/4s_robodesign_jubilant
+cd ~/crane-x7-sleep-model
 source /opt/ros/jazzy/setup.bash
 export ROS_DOMAIN_ID=88
 ros2 launch ./src/arm_control/hardware_readonly.launch.py source:=mock
@@ -50,7 +50,7 @@ ls -l /dev/ttyUSB*
 実機なしの確認を終了してから、次を実行します。
 
 ```bash
-cd /home/kaito/4s_robodesign_jubilant
+cd ~/crane-x7-sleep-model
 source /opt/ros/jazzy/setup.bash
 export ROS_DOMAIN_ID=88
 ros2 launch ./src/arm_control/hardware_readonly.launch.py port:=/dev/ttyUSB0
@@ -116,7 +116,7 @@ ros2 topic echo /hardware_observation/drowsiness
 シミュレーション用の `87` は自動設定しません。
 
 ```bash
-cd /home/kaito/4s_robodesign_jubilant
+cd ~/crane-x7-sleep-model
 source /opt/ros/jazzy/setup.bash
 export ROS_DOMAIN_ID=0
 ros2 topic info -v /joint_states
